@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "AIzaSyCw2LVqZ1p5xNXwGHENjqCRiwezD26-2Nk" });
 
 export interface ChessMove {
   from: string;
@@ -39,7 +39,7 @@ Consider:
 - Positional advantages`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
+      model: "gemini-2.0-flash",
       config: {
         responseMimeType: "application/json",
         responseSchema: {

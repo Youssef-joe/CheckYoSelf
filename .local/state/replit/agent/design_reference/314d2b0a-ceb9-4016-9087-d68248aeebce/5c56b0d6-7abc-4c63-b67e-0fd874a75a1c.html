@@ -1,0 +1,726 @@
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Chess Engine - AI-Powered Chess Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                    chart: {
+                        "1": "var(--chart-1)",
+                        "2": "var(--chart-2)",
+                        "3": "var(--chart-3)",
+                        "4": "var(--chart-4)",
+                        "5": "var(--chart-5)",
+                    }
+                },
+                fontFamily: {
+                    sans: ["var(--font-sans)"],
+                    serif: ["var(--font-serif)"],
+                    mono: ["var(--font-mono)"],
+                }
+            },
+        }
+    };
+    </script>
+    <style>
+        :root {
+            --card: hsl(47.14, 87.5%, 96.86%);
+            --ring: hsl(39.27, 43.31%, 24.9%);
+            --input: hsl(44.21, 26.76%, 86.08%);
+            --muted: hsl(38.4, 60.98%, 91.96%);
+            --accent: hsl(74.4, 39.68%, 87.65%);
+            --border: hsl(44.21, 26.76%, 86.08%);
+            --radius: 0.875rem;
+            --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
+            --chart-1: hsl(203.8863 88.2845% 53.1373%);
+            --chart-2: hsl(159.7826 100% 36.0784%);
+            --chart-3: hsl(42.0290 92.8251% 56.2745%);
+            --chart-4: hsl(147.1429 78.5047% 41.9608%);
+            --chart-5: hsl(341.4894 75.2000% 50.9804%);
+            --popover: hsl(0 0% 100%);
+            --primary: hsl(38.23, 87.6%, 74.71%);
+            --sidebar: hsl(180 6.6667% 97.0588%);
+            --spacing: 0.25rem;
+            --font-mono: 'Space Grotesk', sans-serif;
+            --font-sans: 'Lora', serif;
+            --secondary: hsl(39.27, 43.31%, 24.9%);
+            --background: hsl(45, 100%, 96.86%);
+            --font-serif: 'Geist', sans-serif;
+            --foreground: hsl(38.18, 53.23%, 24.31%);
+            --destructive: hsl(0.49, 54.19%, 55.49%);
+            --sidebar-ring: hsl(202.8169 89.1213% 53.1373%);
+            --sidebar-accent: hsl(211.5789 51.3514% 92.7451%);
+            --sidebar-border: hsl(205.0000 25.0000% 90.5882%);
+            --card-foreground: hsl(210 25% 7.8431%);
+            --sidebar-primary: hsl(203.8863 88.2845% 53.1373%);
+            --tracking-normal: 0em;
+            --muted-foreground: hsl(38.18, 53.23%, 24.31%);
+            --accent-foreground: hsl(91.43, 10.55%, 39.02%);
+            --popover-foreground: hsl(210 25% 7.8431%);
+            --primary-foreground: hsl(39.27, 43.31%, 24.9%);
+            --sidebar-foreground: hsl(210 25% 7.8431%);
+            --secondary-foreground: hsl(39.75, 86.96%, 81.96%);
+            --destructive-foreground: hsl(0 0% 100%);
+            --sidebar-accent-foreground: hsl(203.8863 88.2845% 53.1373%);
+            --sidebar-primary-foreground: hsl(0 0% 100%);
+        }
+
+        .dark {
+            --card: hsl(228 9.8039% 10%);
+            --ring: hsl(202.8169 89.1213% 53.1373%);
+            --input: hsl(207.6923 27.6596% 18.4314%);
+            --muted: hsl(0 0% 9.4118%);
+            --accent: hsl(205.7143 70% 7.8431%);
+            --border: hsl(210 5.2632% 14.9020%);
+            --radius: 1.3rem;
+            --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
+            --chart-1: hsl(203.8863 88.2845% 53.1373%);
+            --chart-2: hsl(159.7826 100% 36.0784%);
+            --chart-3: hsl(42.0290 92.8251% 56.2745%);
+            --chart-4: hsl(147.1429 78.5047% 41.9608%);
+            --chart-5: hsl(341.4894 75.2000% 50.9804%);
+            --popover: hsl(0 0% 0%);
+            --primary: hsl(203.7736 87.6033% 52.5490%);
+            --sidebar: hsl(228 9.8039% 10%);
+            --spacing: 0.25rem;
+            --font-mono: Menlo, monospace;
+            --font-sans: Open Sans, sans-serif;
+            --secondary: hsl(195.0000 15.3846% 94.9020%);
+            --background: hsl(0 0% 0%);
+            --font-serif: Georgia, serif;
+            --foreground: hsl(200 6.6667% 91.1765%);
+            --destructive: hsl(356.3033 90.5579% 54.3137%);
+            --sidebar-ring: hsl(202.8169 89.1213% 53.1373%);
+            --sidebar-accent: hsl(205.7143 70% 7.8431%);
+            --sidebar-border: hsl(205.7143 15.7895% 26.0784%);
+            --card-foreground: hsl(0 0% 85.0980%);
+            --sidebar-primary: hsl(202.8169 89.1213% 53.1373%);
+            --tracking-normal: 0em;
+            --muted-foreground: hsl(210 3.3898% 46.2745%);
+            --accent-foreground: hsl(203.7736 87.6033% 52.5490%);
+            --popover-foreground: hsl(200 6.6667% 91.1765%);
+            --primary-foreground: hsl(0 0% 100%);
+            --sidebar-foreground: hsl(0 0% 85.0980%);
+            --secondary-foreground: hsl(210 25% 7.8431%);
+            --destructive-foreground: hsl(0 0% 100%);
+            --sidebar-accent-foreground: hsl(203.7736 87.6033% 52.5490%);
+            --sidebar-primary-foreground: hsl(0 0% 100%);
+        }
+
+        .chess-square {
+            transition: all 0.2s ease;
+        }
+
+        .chess-square.light {
+            background: linear-gradient(135deg, #f0d9b5 0%, #e8d1a8 100%);
+        }
+
+        .chess-square.dark {
+            background: linear-gradient(135deg, #b58863 0%, #a07856 100%);
+        }
+
+        .chess-square.highlight {
+            box-shadow: inset 0 0 0 3px hsl(var(--primary)) !important;
+        }
+
+        .chess-square.legal-move {
+            position: relative;
+        }
+
+        .chess-square.legal-move::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background: hsl(var(--primary));
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+        .chess-piece {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: grab;
+            user-select: none;
+        }
+
+        .chess-piece:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+            z-index: 1000;
+        }
+
+        .chess-piece.dragging {
+            transform: scale(1.2);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .board-container {
+            perspective: 1000px;
+        }
+
+        .chess-board {
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                0 0 0 2px hsl(92, 15%, 30%),
+                0 0 0 8px hsl(35, 40%, 20%);
+        }
+
+        .evaluation-bar {
+            background: linear-gradient(to top, 
+                hsl(0, 0%, 10%) 0%, 
+                hsl(0, 0%, 10%) 50%, 
+                hsl(0, 0%, 90%) 50%, 
+                hsl(0, 0%, 90%) 100%);
+        }
+
+        .move-history {
+            scrollbar-width: thin;
+            scrollbar-color: hsl(var(--muted-foreground)) transparent;
+        }
+
+        .move-history::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .move-history::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .move-history::-webkit-scrollbar-thumb {
+            background: hsl(var(--muted-foreground));
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground font-sans min-h-screen">
+    <!-- @COMPONENT: MainChessInterface -->
+    <div class="min-h-screen flex">
+        <!-- Main Chess Board Area -->
+        <div class="flex-1 flex items-center justify-center p-6">
+            <div class="board-container">
+                <!-- Chess Board -->
+                <div class="chess-board rounded-lg overflow-hidden" data-implementation="Integrate with chess.js library for game logic">
+                    <div class="grid grid-cols-8 gap-0 w-96 h-96" data-bind="chessBoard" data-mock="true">
+                        <!-- Row 8 -->
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="a8">
+                            <span class="chess-piece text-2xl" data-piece="br">♜</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="b8">
+                            <span class="chess-piece text-2xl" data-piece="bn">♞</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="c8">
+                            <span class="chess-piece text-2xl" data-piece="bb">♝</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="d8">
+                            <span class="chess-piece text-2xl" data-piece="bq">♛</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="e8">
+                            <span class="chess-piece text-2xl" data-piece="bk">♚</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="f8">
+                            <span class="chess-piece text-2xl" data-piece="bb">♝</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="g8">
+                            <span class="chess-piece text-2xl" data-piece="bn">♞</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="h8">
+                            <span class="chess-piece text-2xl" data-piece="br">♜</span>
+                        </div>
+
+                        <!-- Row 7 -->
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="a7">
+                            <span class="chess-piece text-2xl" data-piece="bp">♟</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="b7">
+                            <span class="chess-piece text-2xl" data-piece="bp">♟</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="c7">
+                            <span class="chess-piece text-2xl" data-piece="bp">♟</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="d7">
+                            <span class="chess-piece text-2xl" data-piece="bp">♟</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center highlight" data-square="e7">
+                            <span class="chess-piece text-2xl" data-piece="bp">♟</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="f7">
+                            <span class="chess-piece text-2xl" data-piece="bp">♟</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="g7">
+                            <span class="chess-piece text-2xl" data-piece="bp">♟</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="h7">
+                            <span class="chess-piece text-2xl" data-piece="bp">♟</span>
+                        </div>
+
+                        <!-- Rows 6-3 (Empty squares with some legal move indicators) -->
+                        <!-- Row 6 -->
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="a6"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="b6"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="c6"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="d6"></div>
+                        <div class="chess-square dark w-12 h-12 legal-move flex items-center justify-center" data-square="e6"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="f6"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="g6"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="h6"></div>
+
+                        <!-- Row 5 -->
+                        <div class="chess-square light w-12 h-12 legal-move flex items-center justify-center" data-square="a5"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="b5"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="c5"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="d5"></div>
+                        <div class="chess-square light w-12 h-12 legal-move flex items-center justify-center" data-square="e5"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="f5"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="g5"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="h5"></div>
+
+                        <!-- Row 4 -->
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="a4"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="b4"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="c4"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="d4"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="e4">
+                            <span class="chess-piece text-2xl" data-piece="wp">♙</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="f4"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="g4"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="h4"></div>
+
+                        <!-- Row 3 -->
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="a3"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="b3"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="c3"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="d3"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="e3"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="f3"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="g3"></div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="h3"></div>
+
+                        <!-- Row 2 -->
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="a2">
+                            <span class="chess-piece text-2xl" data-piece="wp">♙</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="b2">
+                            <span class="chess-piece text-2xl" data-piece="wp">♙</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="c2">
+                            <span class="chess-piece text-2xl" data-piece="wp">♙</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="d2">
+                            <span class="chess-piece text-2xl" data-piece="wp">♙</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="e2"></div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="f2">
+                            <span class="chess-piece text-2xl" data-piece="wp">♙</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="g2">
+                            <span class="chess-piece text-2xl" data-piece="wp">♙</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="h2">
+                            <span class="chess-piece text-2xl" data-piece="wp">♙</span>
+                        </div>
+
+                        <!-- Row 1 -->
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="a1">
+                            <span class="chess-piece text-2xl" data-piece="wr">♖</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="b1">
+                            <span class="chess-piece text-2xl" data-piece="wn">♘</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="c1">
+                            <span class="chess-piece text-2xl" data-piece="wb">♗</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="d1">
+                            <span class="chess-piece text-2xl" data-piece="wq">♕</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="e1">
+                            <span class="chess-piece text-2xl" data-piece="wk">♔</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="f1">
+                            <span class="chess-piece text-2xl" data-piece="wb">♗</span>
+                        </div>
+                        <div class="chess-square light w-12 h-12 flex items-center justify-center" data-square="g1">
+                            <span class="chess-piece text-2xl" data-piece="wn">♘</span>
+                        </div>
+                        <div class="chess-square dark w-12 h-12 flex items-center justify-center" data-square="h1">
+                            <span class="chess-piece text-2xl" data-piece="wr">♖</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Board Coordinates -->
+                <div class="flex justify-between mt-2 px-2 text-xs text-muted-foreground font-mono">
+                    <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="w-80 bg-card border-l border-border flex flex-col">
+            <!-- Game Header -->
+            <div class="p-6 border-b border-border">
+                <h1 class="text-xl font-bold font-serif">Elite Chess Engine</h1>
+                <p class="text-sm text-muted-foreground">AI-Powered Analysis</p>
+            </div>
+
+            <!-- Player Info -->
+            <div class="p-4 border-b border-border">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-destructive rounded-full"></div>
+                            <span class="font-medium" data-bind="blackPlayer.name" data-mock="true">Stockfish 16</span>
+                        </div>
+                        <span class="text-sm text-muted-foreground" data-bind="blackPlayer.rating" data-mock="true">3200</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 bg-secondary rounded-full"></div>
+                            <span class="font-medium" data-bind="whitePlayer.name" data-mock="true">You</span>
+                        </div>
+                        <span class="text-sm text-muted-foreground" data-bind="whitePlayer.rating" data-mock="true">1850</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evaluation Bar -->
+            <div class="p-4 border-b border-border">
+                <div class="flex items-center space-x-3">
+                    <div class="w-6 h-20 bg-muted rounded overflow-hidden">
+                        <div class="evaluation-bar w-full h-full relative">
+                            <div class="absolute top-0 left-0 w-full bg-primary transition-all duration-500" style="height: 45%" data-bind="evaluation.percentage"></div>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-sm font-medium" data-bind="evaluation.score" data-mock="true">+0.3</div>
+                        <div class="text-xs text-muted-foreground">Evaluation</div>
+                        <div class="text-xs text-muted-foreground mt-1" data-bind="evaluation.depth" data-mock="true">Depth: 22</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Controls -->
+            <div class="p-4 border-b border-border space-y-3">
+                <button class="w-full bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors" data-event="click:requestAIMove" data-implementation="Integrate with Gemini API for move suggestions">
+                    Request AI Move
+                </button>
+                <button class="w-full bg-accent text-accent-foreground px-4 py-2 rounded-md font-medium hover:bg-accent/90 transition-colors" data-event="click:analyzePosition" data-implementation="Analyze current position with AI">
+                    Analyze Position
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="bg-muted text-muted-foreground px-3 py-2 rounded-md text-sm hover:bg-muted/80 transition-colors" data-event="click:undoMove">
+                        Undo
+                    </button>
+                    <button class="bg-muted text-muted-foreground px-3 py-2 rounded-md text-sm hover:bg-muted/80 transition-colors" data-event="click:newGame">
+                        New Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- Move History -->
+            <div class="flex-1 overflow-hidden flex flex-col">
+                <div class="p-4 border-b border-border">
+                    <h3 class="font-medium text-sm">Move History</h3>
+                </div>
+                <div class="flex-1 overflow-y-auto move-history p-4" data-bind="moveHistory" data-mock="true">
+                    <!-- @MAP: moves.map((move, index) => ( -->
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div class="text-muted-foreground">1.</div>
+                        <div class="text-foreground font-mono">e4</div>
+                        <div class="text-foreground font-mono">e5</div>
+                        
+                        <div class="text-muted-foreground">2.</div>
+                        <div class="text-foreground font-mono">Nf3</div>
+                        <div class="text-foreground font-mono">Nc6</div>
+                        
+                        <div class="text-muted-foreground">3.</div>
+                        <div class="text-foreground font-mono bg-accent rounded px-1">e2-e4</div>
+                        <div class="text-muted-foreground">...</div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+
+            <!-- Game Options -->
+            <div class="p-4 border-t border-border">
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="bg-muted text-muted-foreground px-3 py-2 rounded-md text-sm hover:bg-muted/80 transition-colors" data-event="click:saveGame" data-implementation="Export game as PGN">
+                        Save PGN
+                    </button>
+                    <button class="bg-muted text-muted-foreground px-3 py-2 rounded-md text-sm hover:bg-muted/80 transition-colors" data-event="click:loadGame" data-implementation="Load game from PGN">
+                        Load PGN
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Analysis Modal -->
+    <!-- @STATE: isAnalysisOpen:boolean = false -->
+    <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden" id="analysisModal" data-bind="isAnalysisOpen">
+        <div class="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-card p-6 shadow-lg rounded-lg">
+            <div class="flex flex-col space-y-1.5 text-center sm:text-left">
+                <h2 class="text-lg font-semibold">Position Analysis</h2>
+                <p class="text-sm text-muted-foreground">AI-powered deep analysis</p>
+            </div>
+            <div class="space-y-4" data-mock="true">
+                <div class="space-y-2">
+                    <h4 class="font-medium">Best Moves</h4>
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-sm">
+                            <span class="font-mono">Nf3</span>
+                            <span class="text-muted-foreground">+0.2</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="font-mono">d4</span>
+                            <span class="text-muted-foreground">+0.1</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="font-mono">Nc3</span>
+                            <span class="text-muted-foreground">0.0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <h4 class="font-medium">Analysis</h4>
+                    <p class="text-sm text-muted-foreground">White has a slight advantage due to better piece development. The central pawn structure favors aggressive play.</p>
+                </div>
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+                <button class="bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors" data-event="click:closeAnalysis">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: MainChessInterface -->
+
+    <script>
+        // Chess Engine Implementation Placeholder
+        // TODO: Integrate with chess.js library for complete game logic
+        
+        (function() {
+            // Initialize chess board state
+            let gameState = {
+                board: [],
+                currentPlayer: 'white',
+                moveHistory: [],
+                isGameActive: true
+            };
+
+            // Drag and drop functionality
+            let draggedPiece = null;
+            let draggedFrom = null;
+
+            // Add event listeners for drag and drop
+            document.querySelectorAll('.chess-piece').forEach(piece => {
+                piece.addEventListener('mousedown', handlePieceMouseDown);
+                piece.addEventListener('dragstart', e => e.preventDefault());
+            });
+
+            document.querySelectorAll('.chess-square').forEach(square => {
+                square.addEventListener('mouseup', handleSquareMouseUp);
+                square.addEventListener('mouseover', handleSquareMouseOver);
+            });
+
+            function handlePieceMouseDown(e) {
+                e.preventDefault();
+                draggedPiece = e.target;
+                draggedFrom = e.target.closest('.chess-square');
+                
+                // Add visual feedback
+                draggedPiece.classList.add('dragging');
+                
+                // Highlight legal moves (placeholder)
+                showLegalMoves(draggedFrom.dataset.square);
+            }
+
+            function handleSquareMouseUp(e) {
+                if (!draggedPiece) return;
+                
+                const targetSquare = e.currentTarget;
+                
+                // Remove visual feedback
+                draggedPiece.classList.remove('dragging');
+                clearHighlights();
+                
+                // TODO: Validate move and update game state
+                // This would integrate with chess.js for legal move validation
+                
+                draggedPiece = null;
+                draggedFrom = null;
+            }
+
+            function handleSquareMouseOver(e) {
+                if (!draggedPiece) return;
+                
+                // Visual feedback for valid drop zones
+                const square = e.currentTarget;
+                // TODO: Check if this is a legal move
+            }
+
+            function showLegalMoves(square) {
+                // TODO: Calculate legal moves using chess engine
+                // For now, just show some example highlights
+                document.querySelectorAll('.legal-move').forEach(sq => {
+                    sq.style.display = 'block';
+                });
+            }
+
+            function clearHighlights() {
+                document.querySelectorAll('.chess-square').forEach(square => {
+                    square.classList.remove('highlight');
+                });
+            }
+
+            // AI Integration Placeholder
+            async function requestAIMove() {
+                // TODO: Integrate with Gemini API
+                console.log('Requesting AI move...');
+                
+                // Placeholder for API call
+                try {
+                    // const response = await fetch('/api/ai-move', {
+                    //     method: 'POST',
+                    //     headers: { 'Content-Type': 'application/json' },
+                    //     body: JSON.stringify({ position: getCurrentPosition() })
+                    // });
+                    // const aiMove = await response.json();
+                    
+                    // Simulate AI thinking time
+                    setTimeout(() => {
+                        console.log('AI suggests: e2-e4');
+                        // TODO: Apply AI move to board
+                    }, 1500);
+                } catch (error) {
+                    console.error('Error requesting AI move:', error);
+                }
+            }
+
+            async function analyzePosition() {
+                // TODO: Integrate with Gemini API for position analysis
+                console.log('Analyzing position...');
+                
+                // Show analysis modal
+                document.getElementById('analysisModal').classList.remove('hidden');
+            }
+
+            // Event handlers for UI controls
+            document.addEventListener('click', (e) => {
+                if (e.target.dataset.event) {
+                    const [event, handler] = e.target.dataset.event.split(':');
+                    
+                    switch (handler) {
+                        case 'requestAIMove':
+                            requestAIMove();
+                            break;
+                        case 'analyzePosition':
+                            analyzePosition();
+                            break;
+                        case 'closeAnalysis':
+                            document.getElementById('analysisModal').classList.add('hidden');
+                            break;
+                        case 'undoMove':
+                            // TODO: Implement undo functionality
+                            console.log('Undo move');
+                            break;
+                        case 'newGame':
+                            // TODO: Reset game state
+                            console.log('New game');
+                            break;
+                        case 'saveGame':
+                            // TODO: Export as PGN
+                            console.log('Save game as PGN');
+                            break;
+                        case 'loadGame':
+                            // TODO: Load PGN file
+                            console.log('Load game from PGN');
+                            break;
+                    }
+                }
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    switch (e.key) {
+                        case 'z':
+                            e.preventDefault();
+                            // TODO: Undo move
+                            break;
+                        case 'n':
+                            e.preventDefault();
+                            // TODO: New game
+                            break;
+                        case 's':
+                            e.preventDefault();
+                            // TODO: Save game
+                            break;
+                    }
+                }
+                
+                if (e.key === 'Escape') {
+                    document.getElementById('analysisModal').classList.add('hidden');
+                }
+            });
+
+            // Initialize game
+            function initializeGame() {
+                // TODO: Set up initial board position
+                // TODO: Load engine configuration
+                // TODO: Connect to AI service
+                console.log('Chess engine initialized');
+            }
+
+            initializeGame();
+        })();
+    </script>
+</body>
+</html>
