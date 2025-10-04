@@ -45,7 +45,7 @@ export function ChessPiece({
   return (
     <span
       className={cn(
-        "chess-piece text-3xl select-none cursor-grab transition-all duration-300",
+        "chess-piece text-5xl select-none cursor-grab transition-all duration-300",
         "hover:scale-110 active:cursor-grabbing font-bold",
         isSelected && "scale-110 z-10",
         isDragging && "scale-120 z-50 pointer-events-none opacity-80",
