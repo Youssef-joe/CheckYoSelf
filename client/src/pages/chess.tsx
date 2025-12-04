@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChessBoard } from "@/components/chess/ChessBoard";
 import { GameSidebar } from "@/components/chess/GameSidebar";
 import { AnalysisModal } from "@/components/chess/AnalysisModal";
 import { useChess } from "@/hooks/use-chess";
 import { useToast } from "@/hooks/use-toast";
 import { requestAIMove, analyzePosition, type PositionAnalysis } from "@/lib/chess-ai";
-import { useMutation } from "@tanstack/react-query";
+import { updateUserRating, saveRatingLocally, getGameResult } from "@/lib/rating-utils";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 export default function ChessPage() {
   const {
@@ -24,7 +25,33 @@ export default function ChessPage() {
 
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [analysis, setAnalysis] = useState<PositionAnalysis | undefined>();
+  const [userRating, setUserRating] = useState(1850);
+  const [aiRating, setAIRating] = useState(3200);
+  const [gameId, setGameId] = useState<string | null>(null);
+  const [previousGameStatus, setPreviousGameStatus] = useState("active");
   const { toast } = useToast();
+
+  // Load user rating from localStorage
+  useEffect(() => {
+    const savedRating = localStorage.getItem("userRating");
+    if (savedRating) {
+      setUserRating(parseInt(savedRating, 10));
+    }
+  }, []);
+
+  // Handle game end - update rating
+  useEffect(() => {
+    console.log("Game status changed:", { previousGameStatus, currentStatus: gameState.gameStatus, gameId });
+    if (
+      previousGameStatus === "active" &&
+      gameState.gameStatus !== "active" &&
+      gameId
+    ) {
+      console.log("Triggering game end handler");
+      handleGameEnd();
+    }
+    setPreviousGameStatus(gameState.gameStatus);
+  }, [gameState.gameStatus]);
 
   // AI Move Request
   const aiMoveMutation = useMutation({
@@ -93,6 +120,89 @@ export default function ChessPage() {
     analysisMutation.mutate();
   };
 
+  const handleNewGame = async () => {
+    resetGame();
+    setPreviousGameStatus("active");
+    
+    // Create new game in database and wait for it to complete
+    try {
+      const gameData = await fetch("/api/games", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          whitePlayerId: "user",
+          blackPlayerId: "ai",
+          pgn: "",
+          result: "*",
+        }),
+      }).then(res => res.json());
+      
+      setGameId(gameData.id);
+      console.log("New game created with ID:", gameData.id);
+    } catch (error) {
+      console.error("Failed to create game:", error);
+    }
+  };
+
+  const handleGameEnd = async () => {
+    try {
+      console.log("handleGameEnd called, gameStatus:", gameState.gameStatus);
+      
+      // Determine the game result
+      const result = getGameResult(gameState.gameStatus, true); // true = user is white
+      console.log("Game result:", result);
+
+      if (!gameId) {
+        console.warn("No gameId available");
+        return;
+      }
+
+      console.log("Updating rating for gameId:", gameId, "result:", result);
+
+      // Update rating via API
+      const ratingUpdate = await updateUserRating(gameId, {
+        userId: "default-user", // In a real app, get from auth context
+        result,
+        aiDifficulty: "medium",
+      });
+
+      console.log("Rating update response:", ratingUpdate);
+
+      // Update local state and localStorage
+      setUserRating(ratingUpdate.newRating);
+      saveRatingLocally(ratingUpdate.newRating);
+
+      // Show rating change toast
+      const ratingChangeSign = ratingUpdate.ratingChange > 0 ? "+" : "";
+      toast({
+        title: "Game Finished",
+        description: `Rating: ${ratingUpdate.oldRating} ${ratingChangeSign}${ratingUpdate.ratingChange} → ${ratingUpdate.newRating}`,
+      });
+    } catch (error) {
+      console.error("Error updating rating:", error);
+      // Don't show error to user - rating update is optional
+    }
+  };
+
+  const createGameMutation = useMutation({
+    mutationFn: async (pgn: string) => {
+      const response = await fetch("/api/games", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          whitePlayerId: "user",
+          blackPlayerId: "ai",
+          pgn,
+          result: "*",
+        }),
+      });
+      return response.json();
+    },
+    onSuccess: (game) => {
+      setGameId(game.id);
+    },
+  });
+
   const handleSaveGame = () => {
     const pgn = getPgn();
     const blob = new Blob([pgn], { type: 'text/plain' });
@@ -150,9 +260,11 @@ export default function ChessPage() {
         onRequestAIMove={handleRequestAIMove}
         onAnalyzePosition={handleAnalyzePosition}
         onUndoMove={undoMove}
-        onNewGame={resetGame}
+        onNewGame={handleNewGame}
         onSaveGame={handleSaveGame}
         onLoadGame={handleLoadGame}
+        userRating={userRating}
+        aiRating={aiRating}
       />
 
       {/* AI Analysis Modal */}

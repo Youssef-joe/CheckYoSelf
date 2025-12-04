@@ -1,6 +1,19 @@
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "AIzaSyCw2LVqZ1p5xNXwGHENjqCRiwezD26-2Nk" });
+function getOpenRouter() {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    console.warn("WARNING: OPENROUTER_API_KEY not found in environment variables.");
+  }
+  return new OpenAI({
+    apiKey: apiKey || "",
+    baseURL: "https://openrouter.ai/api/v1",
+    defaultHeaders: {
+      "HTTP-Referer": "http://localhost:8000",
+      "X-Title": "Chess AI",
+    },
+  });
+}
 
 export interface ChessMove {
   from: string;
@@ -38,25 +51,30 @@ Consider:
 - Tactical opportunities
 - Positional advantages`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            from: { type: "string" },
-            to: { type: "string" },
-            promotion: { type: "string" },
-            san: { type: "string" },
-          },
-          required: ["from", "to", "san"],
+    const openrouter = getOpenRouter();
+    const response = await openrouter.chat.completions.create({
+      model: "deepseek/deepseek-v3.2",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
         },
-      },
-      contents: prompt,
+      ],
+      max_tokens: 500,
     });
 
-    const moveData = JSON.parse(response.text || "{}");
+    let text = response.choices[0]?.message?.content || "{}";
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = text.match(/```(?:json)?\n?([\s\S]*?)\n?```/);
+    if (jsonMatch) {
+      text = jsonMatch[1];
+    }
+    // Try to extract JSON object if there's extra text
+    const jsonObjectMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonObjectMatch) {
+      text = jsonObjectMatch[0];
+    }
+    const moveData = JSON.parse(text);
     return {
       from: moveData.from,
       to: moveData.to,
@@ -64,7 +82,8 @@ Consider:
       san: moveData.san,
     };
   } catch (error) {
-    console.error("Error getting AI move:", error);
+    console.error("Error getting AI move:", error instanceof Error ? error.message : error);
+    console.error("Full error:", error);
     // Fallback to a simple opening move
     return { from: "e2", to: "e4", san: "e4" };
   }
@@ -95,38 +114,33 @@ Respond with JSON in this exact format:
   "depth": 20
 }`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "object",
-          properties: {
-            score: { type: "number" },
-            bestMoves: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  from: { type: "string" },
-                  to: { type: "string" },
-                  san: { type: "string" },
-                },
-                required: ["from", "to", "san"],
-              },
-            },
-            analysis: { type: "string" },
-            depth: { type: "number" },
-          },
-          required: ["score", "bestMoves", "analysis", "depth"],
+    const openrouter = getOpenRouter();
+    const response = await openrouter.chat.completions.create({
+      model: "deepseek/deepseek-v3.2",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
         },
-      },
-      contents: prompt,
+      ],
+      max_tokens: 1000,
     });
 
-    return JSON.parse(response.text || "{}");
+    let text = response.choices[0]?.message?.content || "{}";
+    // Extract JSON from markdown code blocks if present
+    const jsonMatch = text.match(/```(?:json)?\n?([\s\S]*?)\n?```/);
+    if (jsonMatch) {
+      text = jsonMatch[1];
+    }
+    // Try to extract JSON object if there's extra text
+    const jsonObjectMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonObjectMatch) {
+      text = jsonObjectMatch[0];
+    }
+    return JSON.parse(text);
   } catch (error) {
-    console.error("Error analyzing position:", error);
+    console.error("Error analyzing position:", error instanceof Error ? error.message : error);
+    console.error("Full error:", error);
     return {
       score: 0,
       bestMoves: [

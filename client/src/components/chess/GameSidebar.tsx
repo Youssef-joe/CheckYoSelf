@@ -28,6 +28,8 @@ interface GameSidebarProps {
   onNewGame: () => void;
   onSaveGame: () => void;
   onLoadGame: () => void;
+  userRating?: number;
+  aiRating?: number;
 }
 
 export function GameSidebar({
@@ -42,6 +44,8 @@ export function GameSidebar({
   onNewGame,
   onSaveGame,
   onLoadGame,
+  userRating = 1850,
+  aiRating = 3200,
 }: GameSidebarProps) {
   const evaluationPercentage = getEvaluationPercentage(evaluation);
   
@@ -78,7 +82,7 @@ export function GameSidebar({
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
               )}
             </div>
-            <span className="text-sm text-muted-foreground">3200</span>
+            <span className="text-sm text-muted-foreground">{aiRating}</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -88,7 +92,7 @@ export function GameSidebar({
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
               )}
             </div>
-            <span className="text-sm text-muted-foreground">1850</span>
+            <span className="text-sm text-muted-foreground">{userRating}</span>
           </div>
         </div>
       </div>

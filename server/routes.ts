@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertGameSchema, insertGameAnalysisSchema } from "@shared/schema";
 import { getAIMove, analyzePosition } from "./services/chess-ai";
+import { calculateELORating, getKFactor, getAIRating } from "./services/rating";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Chess AI endpoints
@@ -84,6 +85,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(analysis);
     } catch (error) {
       res.status(400).json({ error: "Invalid analysis data" });
+    }
+  });
+
+  // Rating update endpoint
+  app.post("/api/games/:id/finish", async (req, res) => {
+    try {
+      const { userId, result, aiDifficulty = "medium" } = req.body;
+      
+      if (!userId || !result) {
+        return res.status(400).json({ error: "userId and result required" });
+      }
+
+      // Get game and user data
+      const game = await storage.getGame(req.params.id);
+      const user = await storage.getUser(userId);
+
+      if (!game || !user) {
+        return res.status(404).json({ error: "Game or user not found" });
+      }
+
+      // Determine player score
+      let playerScore = 0.5; // Default to draw
+      if (result === "win") playerScore = 1;
+      else if (result === "loss") playerScore = 0;
+
+      // Get AI rating
+      const aiRating = getAIRating(aiDifficulty);
+
+      // Calculate new rating
+      const kFactor = getKFactor(user.rating);
+      const ratingResult = calculateELORating({
+        playerRating: user.rating,
+        opponentRating: aiRating,
+        playerScore,
+        kFactor,
+      });
+
+      // Update user rating
+      const updatedUser = await storage.updateUser(userId, {
+        rating: ratingResult.newRating,
+      });
+
+      res.json({
+        success: true,
+        oldRating: user.rating,
+        newRating: ratingResult.newRating,
+        ratingChange: ratingResult.ratingChange,
+        user: updatedUser,
+      });
+    } catch (error) {
+      console.error("Error finishing game:", error);
+      res.status(500).json({ error: "Failed to finish game" });
+    }
+  });
+
+  // Get user rating endpoint
+  app.get("/api/users/:id/rating", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      res.json({ rating: user.rating });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get rating" });
     }
   });
 
