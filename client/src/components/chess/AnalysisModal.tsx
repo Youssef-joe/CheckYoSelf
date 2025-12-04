@@ -63,7 +63,7 @@ export function AnalysisModal({
             <div className="space-y-2">
               <h4 className="font-medium">Best Moves</h4>
               <div className="space-y-1">
-                {analysis.bestMoves.slice(0, 3).map((move, index) => (
+                {analysis.bestMoves && analysis.bestMoves.slice(0, 3).map((move, index) => (
                   <div key={index} className="flex justify-between text-sm bg-muted/30 px-3 py-2 rounded">
                     <span className="font-mono font-medium">{move.san}</span>
                     <span className="text-muted-foreground">
@@ -71,6 +71,9 @@ export function AnalysisModal({
                     </span>
                   </div>
                 ))}
+                {!analysis.bestMoves && (
+                  <p className="text-sm text-muted-foreground">No moves available</p>
+                )}
               </div>
             </div>
 

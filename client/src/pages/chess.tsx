@@ -92,10 +92,12 @@ export default function ChessPage() {
       return await analyzePosition(fen, moveHistory);
     },
     onSuccess: (analysisData) => {
+      console.log("Analysis data received:", analysisData);
       setAnalysis(analysisData);
       setIsAnalysisOpen(true);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Analysis error:", error);
       toast({
         title: "Analysis Error", 
         description: "Failed to analyze position. Please try again.",
